@@ -11,6 +11,7 @@ public class ShoppingIntent {
     private final String productName;
     private final Money price;
     private final String reason;
+    private ShoppingDecision decision;
     private final int cooldownHours;
     private final Instant createdAt;
     private final Instant reviewAvailableAt;
@@ -94,9 +95,31 @@ public class ShoppingIntent {
             );
         }
 
+
         Instant now = Instant.now(clock);
 
-        return !now.isBefore(reviewAvailableAt);
+        return decision==null && !now.isBefore(reviewAvailableAt);
+    }
+
+    public void decide(ShoppingDecision decision, Clock clock) {
+        if (decision == null) {
+            throw new IllegalArgumentException(
+                    "decision is required"
+            );
+
+
+            }
+        if (this.decision != null) {
+            throw new IllegalStateException(
+                    "shopping intent has already been decided"
+            );
+        }
+        if (!canBeReviewed(clock)) {
+            throw new IllegalStateException(
+                    "cooldown period has not ended"
+            );
+        }
+        this.decision = decision;
     }
 
     public UUID id() {
@@ -113,6 +136,9 @@ public class ShoppingIntent {
 
     public String reason() {
         return reason;
+    }
+    public ShoppingDecision decision() {
+        return decision;
     }
 
     public int cooldownHours() {
