@@ -1,4 +1,4 @@
-package com.enesincekara.fren.decision_service;
+package com.enesincekara.fren.decision;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
