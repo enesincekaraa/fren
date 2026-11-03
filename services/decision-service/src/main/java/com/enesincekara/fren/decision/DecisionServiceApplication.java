@@ -1,4 +1,4 @@
-package com.enesincekara.fren.decision_service;
+package com.enesincekara.fren.decision;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
