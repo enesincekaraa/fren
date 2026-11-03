@@ -10,11 +10,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Currency;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ShoppingIntentTest {
 
@@ -170,6 +166,94 @@ class ShoppingIntentTest {
                         creationClock
                 )
         );
+    }
+
+    @Test
+    void decisionIsInitiallyEmpty() {
+        ShoppingIntent intent = createIntentWith72HourCooldown();
+
+        assertNull(intent.decision());
+    }
+
+    @Test
+    void canDecideWhenCooldownEnds() {
+        ShoppingIntent intent = createIntentWith72HourCooldown();
+
+        Clock atDeadline = Clock.fixed(
+                Instant.parse("2026-11-06T10:00:00Z"),
+                ZoneOffset.UTC
+        );
+
+        intent.decide(ShoppingDecision.SKIPPED, atDeadline);
+
+        assertEquals(
+                ShoppingDecision.SKIPPED,
+                intent.decision()
+        );
+
+        assertFalse(intent.canBeReviewed(atDeadline));
+    }
+
+    @Test
+    void cannotDecideBeforeCooldownEnds() {
+        ShoppingIntent intent = createIntentWith72HourCooldown();
+
+        Clock beforeDeadline = Clock.fixed(
+                Instant.parse("2026-11-06T09:59:59Z"),
+                ZoneOffset.UTC
+        );
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> intent.decide(
+                        ShoppingDecision.PURCHASED,
+                        beforeDeadline
+                )
+        );
+
+        assertNull(intent.decision());
+    }
+
+    @Test
+    void cannotDecideTwice() {
+        ShoppingIntent intent = createIntentWith72HourCooldown();
+
+        Clock atDeadline = Clock.fixed(
+                Instant.parse("2026-11-06T10:00:00Z"),
+                ZoneOffset.UTC
+        );
+
+        intent.decide(ShoppingDecision.SKIPPED, atDeadline);
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> intent.decide(
+                        ShoppingDecision.PURCHASED,
+                        atDeadline
+                )
+        );
+
+        assertEquals(
+                ShoppingDecision.SKIPPED,
+                intent.decision()
+        );
+    }
+
+    @Test
+    void rejectsMissingDecision() {
+        ShoppingIntent intent = createIntentWith72HourCooldown();
+
+        Clock atDeadline = Clock.fixed(
+                Instant.parse("2026-11-06T10:00:00Z"),
+                ZoneOffset.UTC
+        );
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> intent.decide(null, atDeadline)
+        );
+
+        assertNull(intent.decision());
     }
 
     private ShoppingIntent createIntentWith72HourCooldown() {
