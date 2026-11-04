@@ -1,3 +1,18 @@
 spring:
   application:
     name: decision-service
+
+  datasource:
+    username: fren
+    password: fren_local
+    url: jdbc:postgresql://localhost:5433/fren
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:/db/migration
