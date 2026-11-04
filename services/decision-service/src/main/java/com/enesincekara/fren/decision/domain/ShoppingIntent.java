@@ -88,6 +88,29 @@ public class ShoppingIntent {
         );
     }
 
+    public static ShoppingIntent restore(
+            UUID id,
+            String productName,
+            Money price,
+            String reason,
+            int cooldownHours,
+            Instant createdAt,
+            Instant reviewAvailableAt,
+            ShoppingDecision decision
+    ){
+        ShoppingIntent intent = new ShoppingIntent(
+                id,
+                productName,
+                price,
+                reason,
+                cooldownHours,
+                createdAt,
+                reviewAvailableAt
+        );
+        intent.decision = decision;
+        return intent;
+    }
+
     public boolean canBeReviewed(Clock clock) {
         if (clock == null) {
             throw new IllegalArgumentException(

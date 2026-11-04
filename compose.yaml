@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: fren
+      POSTGRES_USER: fren
+      POSTGRES_PASSWORD: fren_local
+    ports:
+      - "5433:5432"
+    volumes:
+      - fren-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  fren-postgres-data:

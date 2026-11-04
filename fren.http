@@ -1,0 +1,186 @@
+### 1. Satın alma isteği oluştur
+POST http://localhost:8080/api/v1/shopping-intents
+Content-Type: application/json
+
+{
+  "productName": "Kablosuz kulaklık",
+  "amount": 3499.90,
+  "currency": "TRY",
+  "reason": "Mevcut kulaklığımın pili çabuk bitiyor",
+  "cooldownHours": 72
+}
+
+> {%
+    client.global.clear("shoppingIntentId");
+
+    if (response.status === 201 && response.body && response.body.id) {
+        client.global.set("shoppingIntentId", response.body.id);
+        client.log("Kaydedilen ID: " + response.body.id);
+    }
+
+    client.test("POST isteği 201 Created dönmeli", function () {
+        client.assert(
+            response.status === 201,
+            "Beklenen HTTP 201, gelen: " + response.status
+        );
+    });
+
+    client.test("Yanıtta oluşturulan kaydın ID'si bulunmalı", function () {
+        client.assert(
+            response.body && response.body.id,
+            "Yanıt gövdesinde id bulunamadı"
+        );
+    });
+
+    client.test("Yanıt gönderilen ürün bilgilerini içermeli", function () {
+        client.assert(
+            response.body &&
+            response.body.productName === "Kablosuz kulaklık",
+            "Ürün adı beklenen değer değil"
+        );
+
+        client.assert(
+            response.body.amount === 3499.90,
+            "Tutar beklenen değer değil"
+        );
+
+        client.assert(
+            response.body.currency === "TRY",
+            "Para birimi TRY değil"
+        );
+
+        client.assert(
+            response.body.cooldownHours === 72,
+            "Bekleme süresi 72 saat değil"
+        );
+    });
+
+    client.test("Location başlığı oluşan kaydın adresini içermeli", function () {
+        var location = response.headers.valueOf("Location");
+        var id = response.body && response.body.id;
+
+        client.assert(
+            location && id && location.endsWith("/" + id),
+            "Location başlığı oluşan kaydın ID'siyle bitmiyor"
+        );
+    });
+%}
+
+
+### 2. Oluşturulan satın alma isteğini getir
+GET http://localhost:8080/api/v1/shopping-intents/{{shoppingIntentId}}
+
+> {%
+    client.test("GET isteği 200 OK dönmeli", function () {
+        client.assert(
+            response.status === 200,
+            "Beklenen HTTP 200, gelen: " + response.status
+        );
+    });
+
+    client.test("Dönen kaydın ID'si oluşturulan kayıtla eşleşmeli", function () {
+        var expectedId = client.global.get("shoppingIntentId");
+
+        client.assert(
+            response.body && response.body.id === expectedId,
+            "GET yanıtındaki ID, POST ile oluşturulan ID ile eşleşmiyor"
+        );
+    });
+
+    client.test("GET yanıtı kaydedilen ürün bilgilerini içermeli", function () {
+        client.assert(
+            response.body &&
+            response.body.productName === "Kablosuz kulaklık",
+            "GET yanıtındaki ürün adı beklenen değer değil"
+        );
+
+        client.assert(
+            response.body.amount === 3499.90,
+            "GET yanıtındaki tutar beklenen değer değil"
+        );
+
+        client.assert(
+            response.body.currency === "TRY",
+            "GET yanıtındaki para birimi TRY değil"
+        );
+    });
+%}
+
+
+### 3. Var olmayan bir kaydı getir
+GET http://localhost:8080/api/v1/shopping-intents/00000000-0000-0000-0000-000000000000
+
+> {%
+    client.test("Var olmayan kayıt için 404 dönmeli", function () {
+        client.assert(
+            response.status === 404,
+            "Beklenen HTTP 404, gelen: " + response.status
+        );
+    });
+%}
+
+
+### 4. Desteklenmeyen bekleme süresi: 48 saat
+POST http://localhost:8080/api/v1/shopping-intents
+Content-Type: application/json
+
+{
+  "productName": "Kulaklık",
+  "amount": 1500.00,
+  "currency": "TRY",
+  "reason": "Yeni kulaklık istiyorum",
+  "cooldownHours": 48
+}
+
+> {%
+    client.test("48 saatlik bekleme için 400 dönmeli", function () {
+        client.assert(
+            response.status === 400,
+            "Beklenen HTTP 400, gelen: " + response.status
+        );
+    });
+%}
+
+
+### 5. Boş ürün adı
+POST http://localhost:8080/api/v1/shopping-intents
+Content-Type: application/json
+
+{
+  "productName": " ",
+  "amount": 1500.00,
+  "currency": "TRY",
+  "reason": "Yeni kulaklık istiyorum",
+  "cooldownHours": 24
+}
+
+> {%
+    client.test("Boş ürün adı için 400 dönmeli", function () {
+        client.assert(
+            response.status === 400,
+            "Beklenen HTTP 400, gelen: " + response.status
+        );
+    });
+%}
+
+
+### 6. Geçersiz para birimi
+POST http://localhost:8080/api/v1/shopping-intents
+Content-Type: application/json
+
+{
+  "productName": "Kitap",
+  "amount": 250.00,
+  "currency": "INVALID",
+  "reason": "Okumak istiyorum",
+  "cooldownHours": 24
+}
+
+> {%
+    client.test("Geçersiz para birimi için 400 dönmeli", function () {
+        client.assert(
+            response.status === 400,
+            "Beklenen HTTP 400, gelen: " + response.status
+        );
+    });
+%}
